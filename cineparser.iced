@@ -24,6 +24,17 @@ class Parser
 		@apiKey = null
 		@ytReady = false
 
+	ready: (what) ->
+		switch what
+			when 'yt'
+				@ytReady = true
+				@ee.emit 'ready' if @dataReady
+			when 'data'
+				@dataReady = true
+				@ee.emit 'ready' if @ytReady
+
+	# Concurrently fetches data from CS and YT and parses HTML data from fetched page.
+	# If opts.useCache == true, try reading locally saved data if possible.
 	parse: (url, opts) ->
 		console.log "------------------#{new Date()}------------------"
 		console.log "** Requested URL: #{url}"
@@ -35,28 +46,34 @@ class Parser
 				pages:    "#{cwd}/pages/#{f}"
 				videoIds: "#{cwd}/videoIds/#{f}"
 			}
-		@createDirs "pages", "videoIDs"
 		opts.files = files
+
+		@createDirs "pages", "videoIDs"
+
+		# Fetch youtube video
 		if @apiKey?
 			@ytReady = false
 			ytQuery = 'https://www.googleapis.com/youtube/v3/search?part=id&q=' +
 				files.base.replace(/-/g, '+') +
 				'+trailer+ita&videoEmbeddable=true&maxResults=1&regionCode=IT&type=video&key=' + @apiKey
+
+			# Try using cached ID
 			if opts?.useCache and fs.existsSync files.videoIds
 				console.log "** Using cached videoId: #{files.videoIds}"
 				await fs.readFile files.videoIds, 'utf-8', defer err, data
 				if err
 					@queryYT ytQuery, opts
-					return
+					return this
 				@yturl = data
 				console.log "**** YT: read cached videoId: #{_this.yturl}"
-				@ytReady = true
-				@ee.emit 'ready' if @dataReady
+				@ready 'yt'
 			else
 				@queryYT ytQuery, opts
 		else
 			console.log "** No YT API key: skipping trailer."
+			@ready 'yt'
 
+		# Parse Comingsoon HTML page
 		if opts?.useCache and fs.existsSync files.pages
 			console.log "** Using cached page: #{files.pages}"
 			@parseCS(cheerio.load(fs.readFileSync(files.pages, 'utf-8')), opts.csVersion)
@@ -79,11 +96,10 @@ class Parser
 				console.log "** Cached page: #{files.pages}"
 				return this
 
+		resp.on 'error', (e) -> console.log "[!!] Error getting page: #{e}"
+
 	queryYT: (ytQuery, opts) ->
 		console.log "** Querying YouTube API: #{ytQuery}"
-		ready = =>
-			@ytReady = true
-			@ee.emit 'ready' if @dataReady
 
 		await https.get ytQuery, defer resp
 		body = ''
@@ -93,17 +109,17 @@ class Parser
 			video = JSON.parse body
 			unless video.items?[0]?.id?
 				console.log "[!!] Invalid response from YouTube API: #{video}"
-				ready()
+				@ready 'yt'
 				return
 			@yturl = video.items[0].id.videoId
 			console.log "**** YT: received videoId: #{@yturl}"
-			ready()
+			@ready 'yt'
 			if opts?.useCache
 				await fs.writeFile opts.files.videoIds, @yturl, defer err
 				throw err if err
 				console.log "** Cached videoId: #{opts.files.videoIds} (#{@yturl})"
 				return this
-		resp.on 'error', (e) -> console.log "[!!] Error: #{e}"
+		resp.on 'error', (e) -> console.log "[!!] Error querying YT: #{e}"
 
 	# parse a Comingsoon.it page subsequent calls to emitCode() will use 
 	# data from this page until a new parseCS will be called.
@@ -177,8 +193,7 @@ class Parser
 						when "DURATA"
 							dtime = c.next.next.attribs.datetime
 							@data.duration = @parseDuration dtime[2..dtime.length]
-		@dataReady = true
-		@ee.emit('ready') if @ytReady
+		@ready 'data'
 		return this
 
 	parseDuration: (min) ->
@@ -201,7 +216,7 @@ class Parser
 			for dir, i in dirs
 				fs.mkdir dir, defer errs[i]
 		for err in errs
-			throw err if err? and err.code != 'EEXISTS'
+			throw err if err? and err.code != 'EEXIST'
 
 	# Fill cineteatro template with data. Should only be called when dataReady == true. For ease of writing,
 	# this function is compiled from Coffeescript.
