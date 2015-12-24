@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <form target="_blank" action='/process' method='GET'>
+            <input name="page" type="text" placeholder="Insert URL of a www.comingsoon.it page." style='width: 600px; height: 20px'/><br/>
+            <textarea style='width: 300px; height: 150px' name="dates" placeholder="(Optional) copy-paste dates of movie"></textarea>
+            <br>
+            <select name="v">
+                <option value="1">1 (old)</option>
+                <option value="2" selected>2 (new)</option>
+            </select>
+            &lt;- ComingSoon format (try changing it if result is full of 'undefined')
+            <br>
+            <input type="submit" value="Process"/>
+        </form>
+        <div id='result'></div>
+    </body>
+</html>

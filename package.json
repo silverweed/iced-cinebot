@@ -1,0 +1,10 @@
+{
+	"name": "cinebot",
+	"version": "0.1.0",
+	"description": "automatizes compilation of cineteatrosanluigi templates",
+	"license": "GNU GPL v3",
+	"dependencies": {
+		"cheerio": ">= 0.18.0",
+		"iced-coffee-script": ">= 1.8.0"
+	}
+}
