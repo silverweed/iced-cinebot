@@ -35,7 +35,7 @@ class Parser
 				pages:    "#{cwd}/pages/#{f}"
 				videoIds: "#{cwd}/videoIds/#{f}"
 			}
-		@createDirs "pages", "videoIDs"
+		@createDirs "#{cwd}/pages", "#{cwd}/videoIds"
 		opts.files = files
 		if @apiKey?
 			@ytReady = false
@@ -75,7 +75,7 @@ class Parser
 			console.log "**** Parsed page: #{files.pages}"
 			if opts?.useCache
 				await fs.writeFile files.pages, $('.contenitore-scheda').html(), defer err
-				throw err if err
+				throw "Error writing file #{file.pages}: #{err}" if err?
 				console.log "** Cached page: #{files.pages}"
 				return this
 
@@ -100,7 +100,7 @@ class Parser
 			ready()
 			if opts?.useCache
 				await fs.writeFile opts.files.videoIds, @yturl, defer err
-				throw err if err
+				throw "Error writing file #{opts.files.videoIds}: #{err}" if err?
 				console.log "** Cached videoId: #{opts.files.videoIds} (#{@yturl})"
 				return this
 		resp.on 'error', (e) -> console.log "[!!] Error: #{e}"
@@ -201,7 +201,7 @@ class Parser
 			for dir, i in dirs
 				fs.mkdir dir, defer errs[i]
 		for err in errs
-			throw err if err? and err.code != 'EEXISTS'
+			throw "Error making directory #{dir}: #{err}" if err? and err.code != 'EEXIST'
 
 	# Fill cineteatro template with data. Should only be called when dataReady == true. For ease of writing,
 	# this function is compiled from Coffeescript.
@@ -258,7 +258,7 @@ class Parser
 
 	setDates: (rawdates) ->
 		lines = rawdates.split "\n"
-		for i in [0..lines.length]
+		for i in [0..lines.length] when lines[i]?
 			m = lines[i].match /// ^\s*
 				(Luned.
 				|Marted.
