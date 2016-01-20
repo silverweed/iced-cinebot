@@ -8,7 +8,8 @@ cwd = path.dirname fs.realpathSync __filename
 console.log "cwd = #{cwd}"
 port = 8888
 opts = { useCache: true }
-parser.apiKey = fs.readFileSync "#{cwd}/api.key", 'utf8'
+if fs.existsSync "#{cwd}/api.key"
+	parser.apiKey = fs.readFileSync "#{cwd}/api.key", 'utf8'
 
 http.createServer((req, resp) ->
 	u = url.parse req.url, true
