@@ -11,6 +11,14 @@ opts = { useCache: true }
 if fs.existsSync "#{cwd}/api.key"
 	parser.apiKey = fs.readFileSync "#{cwd}/api.key", 'utf8'
 
+process.argv.filter((arg) -> arg[0] == '-').forEach (arg) ->
+	switch arg
+		when '--no-cache'
+			opts.useCache = false
+		else
+			console.log "Usage: node #{__filename} [--no-cache]"
+			process.exit 1
+
 http.createServer((req, resp) ->
 	u = url.parse req.url, true
 	switch u.pathname

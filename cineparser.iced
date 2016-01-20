@@ -272,8 +272,8 @@ class Parser
 
 	setDates: (rawdates) ->
 		lines = rawdates.split "\n"
-		for i in [0..lines.length] when lines[i]?
-			m = lines[i].match /// ^\s*
+		for line in lines when line?.match?
+			m = line.match /// ^\s*
 				(Luned.
 				|Marted.
 				|Mercoled.
@@ -281,7 +281,7 @@ class Parser
 				|Venerd.
 				|Sabato
 				|Domenica
-				) ([0-9]+) (?:alle )?ore ([0-9\-:.,]+)
+				)\s+([0-9]+)\s+(?:alle )?ore\s+([0-9\-:.,]+)
 				\s*$
 				///i
 			if m?
@@ -290,6 +290,8 @@ class Parser
 				if m[3].length == 2
 					m[3] += ':00'
 				@dates.push "#{m[1]} #{m[2]} alle ore #{m[3]}"
+			else
+				console.log "Could not parse date #{line}"
 
 	reset: ->
 		@data = {}
