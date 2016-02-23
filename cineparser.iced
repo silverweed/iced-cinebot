@@ -36,6 +36,7 @@ class Parser
 	# Concurrently fetches data from CS and YT and parses HTML data from fetched page.
 	# If opts.useCache == true, try reading locally saved data if possible.
 	parse: (url, opts) ->
+		url = "http://#{url}" unless url.startsWith "http"
 		console.log "------------------#{new Date()}------------------"
 		console.log "** Requested URL: #{url}"
 		files = do ->
